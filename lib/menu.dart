@@ -1,5 +1,6 @@
 // lib/menu.dart
 import 'package:flutter/material.dart';
+import 'main.dart';
 
 class MenuPage extends StatelessWidget {
   final String username;

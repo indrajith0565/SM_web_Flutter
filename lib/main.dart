@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'home.dart'; // Make sure this file exists with HomePage
+import 'package:shared_preferences/shared_preferences.dart';
+import 'menu.dart';
 
 void main() {
   runApp(LoginApp());
@@ -16,6 +18,7 @@ class LoginApp extends StatelessWidget {
     );
   }
 }
+
 
 class LoginPage extends StatefulWidget {
   @override
@@ -37,6 +40,7 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     fetchDatabases();
+    _checkSession();
   }
 
   Future<void> fetchDatabases() async {
@@ -49,7 +53,6 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        //print("DB List Response: $jsonData");
 
         if (jsonData["statusCode"] == 1 && jsonData["responseData"] is List) {
           setState(() {
@@ -70,6 +73,25 @@ class _LoginPageState extends State<LoginPage> {
       print("Error fetching databases: $e");
     } finally {
       setState(() => _isFetchingDatabases = false);
+    }
+  }
+
+  Future<void> _checkSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loginTimeStr = prefs.getString("loginTime");
+
+    if (loginTimeStr != null) {
+      final loginTime = DateTime.parse(loginTimeStr);
+      final now = DateTime.now();
+      final duration = now.difference(loginTime);
+
+      if (duration.inMinutes >= 30) {
+        await prefs.clear();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => LoginPage()),
+        );
+      }
     }
   }
 
@@ -94,14 +116,20 @@ class _LoginPageState extends State<LoginPage> {
         );
 
         final data = json.decode(response.body);
-        //print("Login Response: $data");
 
         if (data["statusCode"] == 1) {
           final userData = data["responseData"];
-          Navigator.push(
+          final accessToken = userData["accessToken"];
+
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString("accessToken", accessToken);
+          await prefs.setString("loginTime", DateTime.now().toIso8601String());
+
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => HomePage(userData: userData),
+              //builder: (context) => MenuPage(userData: userData),
+              builder: (context) => MenuPage(username: userData["userName"] ?? "User"),
             ),
           );
         } else {
@@ -135,7 +163,6 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Banner
               Container(
                 width: double.infinity,
                 height: 140,
@@ -187,7 +214,7 @@ class _LoginPageState extends State<LoginPage> {
                                   child: Text(db["code"] ?? db["name"]!),
                                 );
                               }).toList(),
-                              onChanged: (value) {  
+                              onChanged: (value) {
                                 setState(() {
                                   selectedDatabase = value;
                                 });
