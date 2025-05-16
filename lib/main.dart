@@ -215,15 +215,17 @@ class _LoginPageState extends State<LoginPage> {
                               borderRadius: BorderRadius.circular(32),
                             ),
                           ),
-                          child: Text(
-                        "Log in",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? CircularProgressIndicator(color: Colors.white)
+                              : Text(
+                                  "Log in",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
                         ),
                       ),
                     ],
